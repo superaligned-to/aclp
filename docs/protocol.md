@@ -13,7 +13,7 @@ The uppercase requirement words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY use t
 
 [The JSON-RPC schema](schema.md) is authoritative for message structure. This document adds delivery and semantic requirements that JSON Schema cannot express. [The standard event catalog](events.md) defines emission boundaries and names each parameter definition.
 
-An integration binds an endpoint to an immutable contract version, a transport binding, supported methods, local waiting policy, request deadlines, result schemas and permitted result effects. It MUST supply a result schema for each enabled request method. The base success envelope permits any JSON result; the integration's result schema is its application contract.
+An integration binds an endpoint to an immutable contract version, a transport binding, supported methods, local waiting policy, request deadlines, a failure policy, result schemas and permitted result effects. It MUST supply a result schema for each enabled request method. The base success envelope permits any JSON result; the integration's result schema is its application contract.
 
 Standard parameter schemas are fixed. A harness MUST NOT project or rename their fields during installation. Optional fields mean the harness did not expose that data. Validation MUST preserve supplied values without coercion, default insertion or transformation.
 
@@ -65,7 +65,16 @@ Schemas inside catalogs and forms MUST use Draft-07. A different native dialect 
 
 ## Requests
 
-A valid request receives a result or error after the callback completes. When a request guards a pending continuation, the harness MUST hold that continuation until it receives a valid successful reply. A transport failure, timeout, mismatched id, invalid result or oversized reply fails the request and MUST prevent that pending continuation.
+A valid request receives a result or error after the callback completes. When a request guards a pending continuation, the harness MUST hold that continuation until it receives a valid successful reply or the request fails. A transport failure, timeout, mismatched id, invalid result, oversized reply or JSON-RPC error fails the request.
+
+The integration's failure policy, `on_error`, decides what a failed request does to the continuation it guards:
+
+| `on_error` | Failed request |
+| --- | --- |
+| `deny` | MUST prevent the pending continuation. |
+| `allow` | The continuation proceeds as if the result carried no effects. |
+
+When the integration sets no policy, it is `deny` for `tool.requested` and `permission.requested` and `allow` for every other request method. Under either policy the harness MUST report the failure through diagnostics. The policy does not apply to notifications and does not change the wire format.
 
 The request deadline starts before local outbound queueing. A valid empty result permits continuation only if the result schema accepts it. Failure does not roll back completed work or prove server-side cancellation. A post-action request can delay the next action; it cannot undo the observed action. A native asynchronous hook cannot become a blocking boundary through configuration.
 
@@ -169,7 +178,7 @@ Messages are newline-delimited JSON. Each message is one line: compact UTF-8 JSO
 
 A server MUST reply to each request on one line with the matching id, and MAY reply out of order; the client matches replies by id. A notification is admitted once the server has read and validated it and receives no reply. A server MUST NOT write messages that are not replies. An oversized or malformed line receives the error reply the Messages table requires, when one is applicable, and is otherwise reported on standard error.
 
-When admission capacity is exhausted, a server answers a request with JSON-RPC error -32001 and drops a notification with a diagnostic on standard error. Deadlines, fail-closed requests and notification draining apply as in the transport-neutral rules. A client MAY end a server that stops responding. Closing the server's standard input ends the session; the server SHOULD finish admitted callbacks, then exit.
+When admission capacity is exhausted, a server answers a request with JSON-RPC error -32001 and drops a notification with a diagnostic on standard error. Deadlines, the failure policy and notification draining apply as in the transport-neutral rules. A client MAY end a server that stops responding. Closing the server's standard input ends the session; the server SHOULD finish admitted callbacks, then exit.
 
 The client sends `ClientInfo` only through `client.registered` and `client.updated`.
 
