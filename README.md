@@ -32,7 +32,6 @@ The harness validates the result against the schema it installed for this callba
 
 ## SDKs
 
-- TypeScript: [superaligned-to/aclp-ts](https://github.com/superaligned-to/aclp-ts)
-- Rust: [superaligned-to/aclp-rs](https://github.com/superaligned-to/aclp-rs)
+TypeScript, Rust and Python SDKs live in [superaligned-to/aclp-sdk](https://github.com/superaligned-to/aclp-sdk).
 
 Licensed under [MIT](LICENSE).
