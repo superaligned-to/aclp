@@ -94,7 +94,7 @@ A process that queues notifications MUST either drain its pending delivery attem
 
 A session is a continuing conversation or work context. A run is one invocation of agent work, potentially containing several model requests and tool calls. A model request is one model invocation.
 
-Session-scoped events require sessionId. runId and agentId are optional stable correlation identifiers. Global catalog, environment and runtime events can omit sessionId; supplying runId or agentId requires it. Child lifecycle observations use the parent's scope and identify the child separately.
+Session-scoped events require sessionId. runId and agentId are optional stable correlation identifiers. agentId names the agent the event happens in, so an event emitted inside a delegated child carries the child's agentId. Global catalog, environment and runtime events can omit sessionId; supplying runId or agentId requires it. Child lifecycle observations use the parent's scope and identify the child separately.
 
 A call id identifies one tool invocation when available. It MUST remain stable across observations of that invocation. An adapter MUST NOT infer identity from names, arguments, clocks, per-process counters or arrival order. It MAY assign an id when it owns a reliable native execution handle. Without stable ids, receivers cannot pair lifecycle observations.
 
